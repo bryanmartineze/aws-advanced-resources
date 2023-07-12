@@ -1,0 +1,23 @@
+import boto3
+
+def evaluate_compliance(configuration_item):
+    s3 = boto3.client('s3')
+    bucket_name = configuration_item['resourceName']
+    response = s3.list_objects_v2(Bucket=bucket_name)
+    empty = 'Contents' not in response
+    
+    return {
+        'compliance_type': 'COMPLIANT' if not empty else 'NON_COMPLIANT',
+        'annotation': 'Empty S3 bucket' if empty else ''
+    }
+
+def lambda_handler(event, context):
+    invoking_event = event['invokingEvent']
+    configuration_item = invoking_event['configurationItem']
+    evaluation = evaluate_compliance(configuration_item)
+    
+    return {
+        'configRuleName': configuration_item['configRuleName'],
+        'resultToken': event['resultToken'],
+        'evaluationResult': evaluation
+    }
